@@ -24,24 +24,26 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:3.15
 
-LABEL org.opencontainers.image.title="TESTSSSSSSSSSSSSSSS"
-LABEL org.opencontainers.image.description="Docker Extension for using an embedded TESTSSSSSSSSSSSSSSS."
-LABEL org.opencontainers.image.vendor="Marcelo Ochoa"
+LABEL org.opencontainers.image.title="EESSI enabled JupyterLab"
+LABEL org.opencontainers.image.description="Docker Extension for accessing the EESSI software stack through a JupyterLab instance."
+LABEL org.opencontainers.image.vendor="EESSI"
 LABEL com.docker.desktop.extension.api.version=">= 0.2.3"
 LABEL com.docker.extension.categories="utility-tools,cloud-development"
-LABEL com.docker.extension.screenshots="[{\"alt\":\"Welcome Page\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot1.png\"},\
-    {\"alt\":\"Python3 Notebook\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot2.png\"},\
-    {\"alt\":\"Command line terminal\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot3.png\"},\
-    {\"alt\":\"Jupyter Notebooks using Markdown cells\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot4.png\"},\
-    {\"alt\":\"Dark Mode\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot5.png\"}]"
-LABEL com.docker.extension.publisher-url="https://github.com/marcelo-ochoa/jupyter-docker-extension"
-LABEL com.docker.extension.additional-urls="[{\"title\":\"Documentation\",\"url\":\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/README.md\"},\
+# LABEL com.docker.extension.screenshots="[{\"alt\":\"Welcome Page\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot1.png\"},\
+#     {\"alt\":\"Python3 Notebook\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot2.png\"},\
+#     {\"alt\":\"Command line terminal\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot3.png\"},\
+#     {\"alt\":\"Jupyter Notebooks using Markdown cells\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot4.png\"},\
+#     {\"alt\":\"Dark Mode\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot5.png\"}]"
+# LABEL com.docker.extension.publisher-url="https://github.com/marcelo-ochoa/jupyter-docker-extension"
+LABEL com.docker.extension.additional-urls="[{\"title\":\"Documentation\",\"url\":\"https://www.eessi.io/docs/\"},\
     {\"title\":\"License\",\"url\":\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/LICENSE\"}]"
-LABEL com.docker.extension.detailed-description="Docker Extension for using Jupyter Notebook Scientific Python Stack"
-LABEL com.docker.extension.changelog="See full <a href=\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/CHANGELOG.md\">change log</a>"
+LABEL com.docker.extension.detailed-description="Docker Extension for accessing the EESSI software stack through a JupyterLab instance."
+# LABEL com.docker.extension.changelog="See full <a href=\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/CHANGELOG.md\">change log</a>"
 LABEL com.docker.desktop.extension.icon="https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/client/public/favicon.ico"
 LABEL com.docker.extension.detailed-description="Jupyter Docker Stacks are a set of ready-to-run Docker extension containing Jupyter applications and interactive \
     computing tools using a personal Jupyter Server with the JupyterLab frontend."
+LABEL com.docker.extension.detailed-description="The European Environment for Scientific Software Installations (EESSI, pronounced as "easy") is a collaboration \
+between different European partners in HPC community. This extension provides a JupyterLab interface to access the EESSI software stack."
 COPY jupyter.svg metadata.json docker-compose.yml ./
 
 COPY --from=client-builder /app/client/dist ui
