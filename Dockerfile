@@ -24,8 +24,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:3.15
 
-LABEL org.opencontainers.image.title="Jupyter Notebook Scientific Python Stack"
-LABEL org.opencontainers.image.description="Docker Extension for using an embedded Jupyter Notebook Scientific Python Stack."
+LABEL org.opencontainers.image.title="TESTSSSSSSSSSSSSSSS"
+LABEL org.opencontainers.image.description="Docker Extension for using an embedded TESTSSSSSSSSSSSSSSS."
 LABEL org.opencontainers.image.vendor="Marcelo Ochoa"
 LABEL com.docker.desktop.extension.api.version=">= 0.2.3"
 LABEL com.docker.extension.categories="utility-tools,cloud-development"

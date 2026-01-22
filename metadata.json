@@ -6,7 +6,7 @@
   },
   "ui": {
     "dashboard-tab": {
-      "title": "Jupyter Notebook",
+      "title": "EESSI-JupyterLab",
       "root": "/ui",
       "src": "index.html",
       "backend": {

@@ -1,18 +1,34 @@
-version: "3"
-
 services:
   jupyter-docker-extension:
     image: ${DESKTOP_PLUGIN_IMAGE}
   jupyter:
-    image: jupyter/scipy-notebook:lab-4.0.7
-    command: jupyter lab --NotebookApp.token='' --NotebookApp.open_browser='False' --NotebookApp.disable_check_xsrf='True' 
-    container_name: jupyter_embedded_dd_vm
+    image: eessi_jlab
+    # command: module load JupyterLab; jupyter lab --NotebookApp.token='' --NotebookApp.open_browser='False' --NotebookApp.disable_check_xsrf='True' --allow-root
+    container_name: eessi_jupyter_embedded_dd_vm
     restart: unless-stopped
-    volumes:
-      - jupyter_data:/home/jovyan
-    environment:
-      TZ: America/Argentina/Buenos_Aires
+    # volumes:
+    #   - jupyter_data:/home/jovyan
+    #   # - cvmfs-eessi:/cvmfs
+    # environment:
+    #   TZ: America/Argentina/Buenos_Aires
+    privileged: true
     ports:
-      - 58888:8888
-volumes:
-  jupyter_data:
+      - 57438:8888
+      # - 1234:8888
+  # eessi-sidecar:
+  #   image: eessi-sidecar
+  #   # build:
+  #   #   dockerfile: Dockerfile-sidecar
+  #   command: [ "/bin/sh", "-c", "trap : TERM INT; (while true; do sleep 1000; done) & wait" ]
+  #   container_name: eessi_sidecar_mounter
+  #   restart: unless-stopped
+  #   volumes:
+  #     - cvmfs-eessi:/cvmfs
+# volumes:
+#   jupyter_data:
+#   # cvmfs-eessi:
+#     # driver: local
+#     # driver_opts:
+#     #   type: none
+#     #   o: bind
+#     #   device: /cvmfs/eessi.opensciencegrid.org

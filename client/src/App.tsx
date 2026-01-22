@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Box, LinearProgress, Typography, Grid, useTheme, useMediaQuery } from '@mui/material';
 import { createDockerDesktopClient } from '@docker/extension-api-client';
+import { Grid, LinearProgress, Typography, useMediaQuery } from '@mui/material';
+import { useEffect, useState } from 'react';
 
 const client = createDockerDesktopClient();
 
@@ -23,7 +23,7 @@ export function App() {
 
       await ddClient.docker.cli.exec("exec", [
         '-d',
-        'jupyter_embedded_dd_vm',
+        'eessi_jupyter_embedded_dd_vm',
         '/bin/sh',
         '-c',
         shCmd
@@ -83,7 +83,7 @@ export function App() {
         </Grid>
       )}
       {ready && (
-        window.location.href = 'http://localhost:58888/lab'
+        window.location.href = 'http://localhost:57438/lab'
       )}
     </>
   );

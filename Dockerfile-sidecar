@@ -1,0 +1,22 @@
+FROM ubuntu:24.04
+
+RUN apt update && \
+    apt install -y wget lsb-release && \
+    wget https://cvmrepo.s3.cern.ch/cvmrepo/apt/cvmfs-release-latest_all.deb && \
+    dpkg -i cvmfs-release-latest_all.deb && \
+    rm -f cvmfs-release-latest_all.deb && \
+    apt update && \
+    apt install -y cvmfs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Needed to avoid `Failed to initialize loader socket` error
+RUN mkdir /var/run/cvmfs
+
+RUN mkdir -p /etc/cvmfs/keys/eessi.io
+COPY eessi/eessi.conf /etc/cvmfs/config.d/eessi.conf
+COPY eessi/eessi.io.pub /etc/cvmfs/keys/eessi.io/
+
+COPY entrypoint-sidecar.sh /entrypoint-sidecar.sh
+RUN chmod +x /entrypoint-sidecar.sh
+
+ENTRYPOINT ["/entrypoint-sidecar.sh"]

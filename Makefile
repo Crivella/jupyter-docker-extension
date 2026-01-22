@@ -1,10 +1,10 @@
 all: clean extension install
 
-ORG=mochoa
-JUPYTER_IMAGE_NAME=jupyter/scipy-notebook
+ORG=my
+JUPYTER_IMAGE_NAME=eessi_jlab
 VERSION=22.4
 MINOR=2
-IMAGE_NAME=$(ORG)/jupyter-docker-extension
+IMAGE_NAME=$(ORG)/jupyter-docker-extension-eessi
 TAGGED_IMAGE_NAME=$(IMAGE_NAME):$(VERSION).${MINOR}
 
 clean:
@@ -12,6 +12,7 @@ clean:
 	-docker rmi $(TAGGED_IMAGE_NAME)
 
 extension:
+	docker buildx build -t ${JUPYTER_IMAGE_NAME} -f Dockerfile-sidecar .
 	docker buildx build -t $(TAGGED_IMAGE_NAME) --build-arg VERSION=$(VERSION) --build-arg JUPYTER_IMAGE_NAME=$(JUPYTER_IMAGE_NAME) .
 
 install:
