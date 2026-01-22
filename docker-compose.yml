@@ -6,7 +6,8 @@ services:
     # command: module load JupyterLab; jupyter lab --NotebookApp.token='' --NotebookApp.open_browser='False' --NotebookApp.disable_check_xsrf='True' --allow-root
     container_name: eessi_jupyter_embedded_dd_vm
     restart: unless-stopped
-    # volumes:
+    volumes:
+      - cvmfs-cache:/cvmfs-cache
     #   - jupyter_data:/home/jovyan
     #   # - cvmfs-eessi:/cvmfs
     # environment:
@@ -24,8 +25,9 @@ services:
   #   restart: unless-stopped
   #   volumes:
   #     - cvmfs-eessi:/cvmfs
-# volumes:
-#   jupyter_data:
+volumes:
+  # jupyter_data:
+  cvmfs-cache:
 #   # cvmfs-eessi:
 #     # driver: local
 #     # driver_opts:
