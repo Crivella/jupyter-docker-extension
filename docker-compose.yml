@@ -8,8 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - cvmfs-cache:/cvmfs-cache
-    #   - jupyter_data:/home/jovyan
-    #   # - cvmfs-eessi:/cvmfs
+      - jupyter_data:/home/jovyan
     # environment:
     #   TZ: America/Argentina/Buenos_Aires
     privileged: true
@@ -26,7 +25,7 @@ services:
   #   volumes:
   #     - cvmfs-eessi:/cvmfs
 volumes:
-  # jupyter_data:
+  jupyter_data:
   cvmfs-cache:
 #   # cvmfs-eessi:
 #     # driver: local

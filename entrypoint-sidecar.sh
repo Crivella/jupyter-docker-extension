@@ -1,8 +1,19 @@
 #!/bin/bash
 
+# Needed to avoid `Failed to initialize loader socket` error
+# Needs to be inside the entrypoint script in case of volume mounts
+mkdir -p /cvmfs-cache
+chown -R cvmfs:cvmfs /cvmfs-cache
+cat /etc/cvmfs/config.d/software.eessi.io.conf
+ls -la /cvmfs-cache
+
+ls -l /home
+ls -la /home/jovyan
+
 # Mount EESSI CVMFS repository
 mkdir -p /cvmfs/software.eessi.io
-cvmfs2 -o config=/etc/cvmfs/config.d/eessi.conf software.eessi.io /cvmfs/software.eessi.io
+# cvmfs2 -o config=/etc/cvmfs/config.d/software.eessi.io.conf software.eessi.io /cvmfs/software.eessi.io
+mount -t cvmfs software.eessi.io /cvmfs/software.eessi.io
 
 # UID=1000
 # GID=1000
@@ -19,11 +30,13 @@ cvmfs2 -o config=/etc/cvmfs/config.d/eessi.conf software.eessi.io /cvmfs/softwar
 
 # # Switch to the EESSI user
 # su - ${USER}
- 
-# Load EESSI software environment
-source /cvmfs/software.eessi.io/versions/2023.06/init/bash 
 
-# Start JupyterLab server from EESSI
+cd /home/jovyan
+su -c '
+whoami
+pwd
+echo "-------------------------------------------------------------------------------"
+source /cvmfs/software.eessi.io/versions/2023.06/init/bash 
 module load JupyterLab
 jupyter lab \
     --NotebookApp.token='' \
@@ -31,3 +44,18 @@ jupyter lab \
     --NotebookApp.disable_check_xsrf='True' \
     --allow-root \
     --ip 0.0.0.0
+' jovyan
+ 
+# Load EESSI software environment
+# source /cvmfs/software.eessi.io/versions/2023.06/init/bash 
+# module load JupyterLab
+# jupyter lab \
+#     --NotebookApp.token='' \
+#     --NotebookApp.open_browser='False' \
+#     --NotebookApp.disable_check_xsrf='True' \
+#     --allow-root \
+#     --ip 0.0.0.0
+
+# Start JupyterLab server from EESSI
+
+# $@
