@@ -14,8 +14,9 @@ RUN mkdir -p /etc/cvmfs/keys/eessi.io
 COPY eessi/software.eessi.io.conf /etc/cvmfs/config.d/
 COPY eessi/eessi.io.pub /etc/cvmfs/keys/eessi.io/
 
-RUN groupadd -g 1000 jovyan
-RUN useradd -u 1000 -g 1000 -m -s /bin/bash jovyan
+RUN groupadd -g 1000 eessi-user
+RUN useradd -u 1000 -g 1000 -m -s /bin/bash eessi-user
+RUN echo 'source $EESSI_EPREFIX/usr/share/Lmod/init/bash' >> /home/eessi-user/.bashrc
 
 COPY entrypoint-sidecar.sh /entrypoint-sidecar.sh
 RUN chmod +x /entrypoint-sidecar.sh

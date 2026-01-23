@@ -3,33 +3,16 @@ services:
     image: ${DESKTOP_PLUGIN_IMAGE}
   jupyter:
     image: eessi_jlab
-    # command: module load JupyterLab; jupyter lab --NotebookApp.token='' --NotebookApp.open_browser='False' --NotebookApp.disable_check_xsrf='True' --allow-root
     container_name: eessi_jupyter_embedded_dd_vm
     restart: unless-stopped
     volumes:
       - cvmfs-cache:/cvmfs-cache
-      - jupyter_data:/home/jovyan
-    # environment:
-    #   TZ: America/Argentina/Buenos_Aires
+      - jupyter_data:/home/eessi-user
+    # Required for CVMFS to be able to mount the filesystem
     privileged: true
     ports:
       - 57438:8888
-      # - 1234:8888
-  # eessi-sidecar:
-  #   image: eessi-sidecar
-  #   # build:
-  #   #   dockerfile: Dockerfile-sidecar
-  #   command: [ "/bin/sh", "-c", "trap : TERM INT; (while true; do sleep 1000; done) & wait" ]
-  #   container_name: eessi_sidecar_mounter
-  #   restart: unless-stopped
-  #   volumes:
-  #     - cvmfs-eessi:/cvmfs
+
 volumes:
   jupyter_data:
   cvmfs-cache:
-#   # cvmfs-eessi:
-#     # driver: local
-#     # driver_opts:
-#     #   type: none
-#     #   o: bind
-#     #   device: /cvmfs/eessi.opensciencegrid.org

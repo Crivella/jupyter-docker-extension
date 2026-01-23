@@ -16,7 +16,7 @@ export function App() {
 
   useEffect(() => {
     let timer: number;
-    let shCmd = '"sed -i s/'.concat((isDarkModeEnabled) ? 'Light' : 'Dark').concat('/').concat((isDarkModeEnabled) ? 'Dark' : 'Light').concat('/g /home/jovyan/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings || (mkdir -p /home/jovyan/.jupyter/lab/user-settings/@jupyterlab/apputils-extension && echo \'{\\"theme\\": \\"JupyterLab Light\\"}\' > /home/jovyan/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings)"')
+    let shCmd = '"sed -i s/'.concat((isDarkModeEnabled) ? 'Light' : 'Dark').concat('/').concat((isDarkModeEnabled) ? 'Dark' : 'Light').concat('/g /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings || (mkdir -p /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension && echo \'{\\"theme\\": \\"JupyterLab Light\\"}\' > /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings)"')
     //console.log(shCmd);
     const start = async () => {
       setReady(() => false);
