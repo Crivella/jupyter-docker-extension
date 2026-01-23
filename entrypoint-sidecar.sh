@@ -19,7 +19,12 @@ mount -t cvmfs software.eessi.io /cvmfs/software.eessi.io
 cd /home/${USER}
 su -c '
 source /cvmfs/software.eessi.io/versions/2023.06/init/bash 
+module load EESSI-extend
+eb jupyterlmod-4.0.3-GCCcore-12.3.0.eb -r
 module load JupyterLab
+module load jupyterlmod/4.0.3-GCCcore-12.3.0
+export JUPYTER_PATH="$EBROOTJUPYTERLMOD/share/jupyter:$JUPYTER_PATH"
+
 jupyter lab \
     --NotebookApp.token='' \
     --NotebookApp.open_browser='False' \
