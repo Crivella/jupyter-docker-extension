@@ -29,7 +29,15 @@ mount -t cvmfs software.eessi.io /cvmfs/software.eessi.io
 # Run JupyterLab from EESSI as specified user
 cd /home/${USER}
 su -c '
-source /cvmfs/software.eessi.io/versions/2023.06/init/bash 
+source /cvmfs/software.eessi.io/versions/2023.06/init/bash
+
+export OMP_NUM_THREADS=1                                      
+export OMPI_MCA_osc=^ucx                                      
+export OMPI_MCA_btl=^openib,ofi                               
+export OMPI_MCA_pml=^ucx                                      
+export OMPI_MCA_mtl=^ofi                                      
+export OMPI_MCA_btl_tcp_if_exclude=docker0,127.0.0.0/8 
+
 module load EESSI-extend
 
 eb jupyterlmod-4.0.3-GCCcore-12.3.0.eb -r 
