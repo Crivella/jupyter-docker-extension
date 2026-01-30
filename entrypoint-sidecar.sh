@@ -12,9 +12,10 @@ rm -fr /home/${USER}/.jupyter
 mkdir -p /home/${USER}/.jupyter/lab/workspaces
 
 BASHRC="/home/${USER}/.bashrc"
-if [ -z "`grep 'module reload' ${BASHRC}`" ]; then
-    echo 'test ! -z "$EESSI_EPREFIX" && source $EESSI_EPREFIX/usr/share/Lmod/init/bash' >> ${BASHRC}
-    echo 'module reload' >> ${BASHRC}
+if [ -z "`grep 'module ' ${BASHRC}`" ]; then
+    source /cvmfs/software.eessi.io/versions/2023.06/init/bash >> ${BASHRC}
+    echo 'module purge' >> ${BASHRC}
+    echo 'module load EESSI-extend' >> ${BASHRC}
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> ${BASHRC}
 fi
 
