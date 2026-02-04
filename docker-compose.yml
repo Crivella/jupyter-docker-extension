@@ -2,8 +2,8 @@ services:
   jupyter-docker-extension:
     image: ${DESKTOP_PLUGIN_IMAGE}
   jupyter:
-    image: eessi_jlab
-    container_name: eessi_jupyter_embedded_dd_vm
+    image: ghcr.io/ai-transpwood/eessi_jupyterlab:0.1.1
+    container_name: AITW_eessi_jupyter_embedded_dd_vm
     restart: unless-stopped
     volumes:
       - cvmfs-cache:/cvmfs-cache
@@ -11,7 +11,7 @@ services:
     # Required for CVMFS to be able to mount the filesystem
     privileged: true
     ports:
-      - 57438:8888
+      - 47811:8888
 
 volumes:
   jupyter_data:

@@ -3,6 +3,11 @@ import { Grid, LinearProgress, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 const client = createDockerDesktopClient();
+const vmName = 'AITW_eessi_jupyter_embedded_dd_vm';
+const vmPort = 47811;
+const vmUser = 'eessi-user';
+const jlabConfigDir = `/home/${vmUser}/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/`;
+const jlabConfigFile = `${jlabConfigDir}/themes.jupyterlab-settings`;
 
 function useDockerDesktopClient() {
   return client;
@@ -13,17 +18,19 @@ export function App() {
   const [unavailable, setUnavailable] = useState(false);
   const ddClient = useDockerDesktopClient();
   const isDarkModeEnabled = useMediaQuery('(prefers-color-scheme: dark)', { noSsr: true });
+  const prevMode = isDarkModeEnabled ? 'Light' : 'Dark';
+  const currentMode = isDarkModeEnabled ? 'Dark' : 'Light';
 
   useEffect(() => {
     let timer: number;
-    let shCmd = '"sed -i s/'.concat((isDarkModeEnabled) ? 'Light' : 'Dark').concat('/').concat((isDarkModeEnabled) ? 'Dark' : 'Light').concat('/g /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings || (mkdir -p /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension && echo \'{\\"theme\\": \\"JupyterLab Light\\"}\' > /home/eessi-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings)"')
-    //console.log(shCmd);
+    let shCmd = `"sed -i s/${prevMode}/${currentMode}/g ${jlabConfigFile}`
+      .concat(` || (mkdir -p ${jlabConfigDir} && echo \'{\\"theme\\": \\"JupyterLab ${currentMode}\\"}\' > ${jlabConfigFile})"`)
     const start = async () => {
       setReady(() => false);
 
       await ddClient.docker.cli.exec("exec", [
         '-d',
-        'eessi_jupyter_embedded_dd_vm',
+        vmName,
         '/bin/sh',
         '-c',
         shCmd
@@ -83,7 +90,7 @@ export function App() {
         </Grid>
       )}
       {ready && (
-        window.location.href = 'http://localhost:57438/lab'
+        window.location.href = `http://localhost:${vmPort}/lab`
       )}
     </>
   );

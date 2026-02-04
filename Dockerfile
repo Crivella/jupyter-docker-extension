@@ -24,27 +24,53 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:3.15
 
-LABEL org.opencontainers.image.title="EESSI enabled JupyterLab"
-LABEL org.opencontainers.image.description="Docker Extension for accessing the EESSI software stack through a JupyterLab instance."
-LABEL org.opencontainers.image.vendor="EESSI"
+LABEL org.opencontainers.image.title="AI-TranspWood codebases in EESSI"
+LABEL org.opencontainers.image.description="Docker Extension for accessing the AI-TranspWood European project codebases through an EESSI-enabled JupyterLab instance."
+LABEL org.opencontainers.image.vendor="AI-TranspWood"
 LABEL com.docker.desktop.extension.api.version=">= 0.2.3"
 LABEL com.docker.extension.categories="utility-tools,cloud-development"
-# LABEL com.docker.extension.screenshots="[{\"alt\":\"Welcome Page\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot1.png\"},\
-#     {\"alt\":\"Python3 Notebook\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot2.png\"},\
-#     {\"alt\":\"Command line terminal\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot3.png\"},\
-#     {\"alt\":\"Jupyter Notebooks using Markdown cells\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot4.png\"},\
-#     {\"alt\":\"Dark Mode\", \"url\":\"https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/docs/images/screenshot5.png\"}]"
-# LABEL com.docker.extension.publisher-url="https://github.com/marcelo-ochoa/jupyter-docker-extension"
-LABEL com.docker.extension.additional-urls="[{\"title\":\"Documentation\",\"url\":\"https://www.eessi.io/docs/\"},\
-    {\"title\":\"License\",\"url\":\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/LICENSE\"}]"
+LABEL com.docker.extension.publisher-url="https://www.ai-transpwood-project.eu"
+LABEL com.docker.extension.additional-urls="[\
+    {\
+      \"title\":\"Project website\",\
+      \"url\":\"https://www.ai-transpwood-project.eu\"\
+    },\
+    {\
+      \"title\":\"Project Github ORG\",\
+      \"url\":\"https://github.com/orgs/AI-TranspWood\"\
+    },\
+    {\
+      \"title\":\"EESSI Documentation\",\
+      \"url\":\"https://www.eessi.io/docs/\"\
+    },\
+    {\
+      \"title\":\"License\",\
+      \"url\":\"https://github.com/AI-TranspWood/jupyter-docker-extension/blob/main/LICENSE\"\
+    }\
+]"
 LABEL com.docker.extension.detailed-description="Docker Extension for accessing the EESSI software stack through a JupyterLab instance."
-# LABEL com.docker.extension.changelog="See full <a href=\"https://github.com/marcelo-ochoa/jupyter-docker-extension/blob/main/CHANGELOG.md\">change log</a>"
-LABEL com.docker.desktop.extension.icon="https://raw.githubusercontent.com/marcelo-ochoa/jupyter-docker-extension/main/client/public/favicon.ico"
-LABEL com.docker.extension.detailed-description="Jupyter Docker Stacks are a set of ready-to-run Docker extension containing Jupyter applications and interactive \
-    computing tools using a personal Jupyter Server with the JupyterLab frontend."
-LABEL com.docker.extension.detailed-description="The European Environment for Scientific Software Installations (EESSI, pronounced as "easy") is a collaboration \
-between different European partners in HPC community. This extension provides a JupyterLab interface to access the EESSI software stack."
-COPY jupyter.svg metadata.json docker-compose.yml ./
+LABEL com.docker.extension.changelog="See full <a href=\"https://github.com/AI-TranspWood/jupyter-docker-extension/blob/main/CHANGELOG.md\">change log</a>"
+LABEL com.docker.desktop.extension.icon="https://raw.githubusercontent.com/AI-TranspWood/jupyter-docker-extension/main/client/public/favicon.ico"
+LABEL com.docker.extension.detailed-description="\
+<a href=https://www.ai-transpwood-project.eu/>AI-TranspWood (AITW)</a> ambition is to create an AI-driven multiscale methodology for new Safe and Sustainable by Design \
+(SSbD), and functional wood-based composites and demonstrate the concept for Transparent Wood (TW), a promising composite \
+with potential applications in several industrial fields, such as construction, automotive, electronics and furniture.\
+<br>\
+Several of the <a href=https://github.com/orgs/AI-TranspWood/repositories>modeling tools developed within AITW</a> are made available through the <a href=https://www.eessi.io/>European Environment for Scientific \
+Software Installations (EESSI)</a>.\
+<br>\
+This extension aims at making these tools easily accessible to users through a JupyterLab interface capable of pulling optimized code binaries directly from EESSI.\
+The terminal app available in JupyterLab can also be used by power-users to run the AITW codes through their respective CLIs, \
+or any other of the <a href=https://www.eessi.io/docs/available_software/overview/>codes made available through EESSI</a>.\
+"
+LABEL com.docker.extension.screenshots="[\
+    {\"alt\":\"Welcome Page\", \"url\":\"https://raw.githubusercontent.com/AI-TranspWood/jupyter-docker-extension/main/docs/images/landing_page.png\"},\
+    {\"alt\":\"JupyterLmod interface to EESSI software stack\", \"url\":\"https://raw.githubusercontent.com/AI-TranspWood/jupyter-docker-extension/main/docs/images/jupyterlmod.png\"},\
+    {\"alt\":\"EESSI-enabled Terminal\", \"url\":\"https://raw.githubusercontent.com/AI-TranspWood/jupyter-docker-extension/main/docs/images/terminal.png\"},\
+    {\"alt\":\"Dark Mode\", \"url\":\"https://raw.githubusercontent.com/AI-TranspWood/jupyter-docker-extension/main/docs/images/dark_mode.png\"}\
+]"
+
+COPY AITW_logo.svg metadata.json docker-compose.yml ./
 
 COPY --from=client-builder /app/client/dist ui
 COPY --from=builder /backend/bin/service /

@@ -1,12 +1,12 @@
 {
-  "icon": "jupyter.svg",
+  "icon": "AITW_logo.svg",
   "vm": {
     "composefile": "docker-compose.yml",
     "exposes": { "socket": "jupyter-docker-extension.sock" }
   },
   "ui": {
     "dashboard-tab": {
-      "title": "EESSI-JupyterLab",
+      "title": "AITW-JupyterLab",
       "root": "/ui",
       "src": "index.html",
       "backend": {

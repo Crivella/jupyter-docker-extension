@@ -1,19 +1,17 @@
 all: clean extension install
 
-ORG=my
-JUPYTER_IMAGE_NAME=eessi_jlab
+ORG=aitranspwood
+JUPYTER_IMAGE_NAME=ghcr.io/$(ORG)/eessi_jupyterlab:0.1.1
 VERSION=1.0
 MINOR=0
-IMAGE_NAME=$(ORG)/jupyter-docker-extension-eessi
+IMAGE_NAME=$(ORG)/jupyter-docker-extension
 TAGGED_IMAGE_NAME=$(IMAGE_NAME):$(VERSION).${MINOR}
 
 clean:
 	-docker extension rm $(IMAGE_NAME)
 	-docker rmi $(TAGGED_IMAGE_NAME)
 
-# Todo: Probably better to seprate the jupyter image into a dedicated image and just pull it
 extension:
-	docker buildx build -t ${JUPYTER_IMAGE_NAME} -f Dockerfile-sidecar .
 	docker buildx build -t $(TAGGED_IMAGE_NAME) --build-arg VERSION=$(VERSION) --build-arg JUPYTER_IMAGE_NAME=$(JUPYTER_IMAGE_NAME) .
 
 install:
@@ -29,4 +27,7 @@ multiarch:
 	docker buildx create --name=buildx-multi-arch --driver=docker-container --driver-opt=network=host
 
 build:
+	docker buildx build --output=type=docker --builder=buildx-multi-arch --platform=linux/amd64,linux/arm64 --build-arg JUPYTER_IMAGE_NAME=$(JUPYTER_IMAGE_NAME) --tag=$(TAGGED_IMAGE_NAME) .
+
+publish:
 	docker buildx build --push --builder=buildx-multi-arch --platform=linux/amd64,linux/arm64 --build-arg JUPYTER_IMAGE_NAME=$(JUPYTER_IMAGE_NAME) --tag=$(TAGGED_IMAGE_NAME) .
