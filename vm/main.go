@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
+	"strconv"
 	"flag"
 	"log"
 	"net"
 	"net/http"
 	"os"
+
+	"jupyter-docker-extension/workload"
 
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
@@ -18,7 +22,22 @@ func main() {
 
 	os.RemoveAll(socketPath)
 
-	logrus.New().Infof("Starting listening on %s", socketPath)
+	logrus.Infof("Starting listening on %s", socketPath)
+
+	// --- Docker workload manager (GPU detection + container lifecycle)
+	manager, err := workload.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer manager.Close()
+
+	ctx := context.Background()
+
+	// --- Ensure Jupyter is running (GPU or CPU decision happens here)
+	if err := manager.EnsureJupyter(ctx); err != nil {
+		log.Fatalf("failed to start jupyter: %v", err)
+	}
+
 	router := echo.New()
 	router.HideBanner = true
 
@@ -30,30 +49,36 @@ func main() {
 	}
 	router.Listener = ln
 
-	router.GET("/ready", ready)
+	router.GET("/ready", func(ctx echo.Context) error {
+		ready := manager.JupyterRunning(
+			ctx.Request().Context(),
+		)
+	
+		return ctx.String(
+			http.StatusOK,
+			strconv.FormatBool(ready),
+		)
+	})
+	router.GET("/gpu", func(c echo.Context) error {
+	
+		gpu, err := manager.HasGPU(c.Request().Context())
+	
+		if err != nil {
+			return c.JSON(500, map[string]any{
+				"error": err.Error(),
+			})
+		}
+	
+		return c.JSON(200, map[string]any{
+			"gpuAvailable": gpu,
+		})
+	})
 
 	log.Fatal(router.Start(startURL))
 }
 
 func listen(path string) (net.Listener, error) {
 	return net.Listen("unix", path)
-}
-
-// ready checks whether Jupyter Notebook is ready or not by querying jupyter:8080.
-func ready(ctx echo.Context) error {
-	url := "http://jupyter:8888/" // "jupyter" is the name of the service defined in docker-compose.yml
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Println(err)
-		return ctx.String(http.StatusOK, "false")
-
-	}
-	defer resp.Body.Close()
-
-	return ctx.String(resp.StatusCode, "true")
-
-	// return ctx.JSON(http.StatusOK, HTTPMessageBody{Message: "hello from HTTP"})
-
 }
 
 type HTTPMessageBody struct {

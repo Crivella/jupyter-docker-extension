@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY client /app/client
 RUN npm run build
 
-FROM golang:1.17-alpine AS builder
+FROM golang:1.25-alpine AS builder
 ENV CGO_ENABLED=0
 WORKDIR /backend
 COPY vm/go.* .

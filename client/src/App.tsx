@@ -3,7 +3,7 @@ import { Grid, LinearProgress, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 const client = createDockerDesktopClient();
-const vmName = 'AITW_eessi_jupyter_embedded_dd_vm';
+const vmName = 'jupyter-runtime';
 const vmUser = 'eessi-user';
 const jlabConfigDir = `/home/${vmUser}/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/`;
 const jlabConfigFile = `${jlabConfigDir}/themes.jupyterlab-settings`;
