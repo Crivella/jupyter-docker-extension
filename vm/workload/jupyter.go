@@ -15,8 +15,9 @@ const (
 	JupyterImage         = "ghcr.io/ai-transpwood/eessi_jupyterlab:0.1.6"
 )
 
+func (m *Manager) StartJupyter(ctx context.Context, gpu string) error {
 
-func (m *Manager) StartJupyter(ctx context.Context, gpu bool) error {
+	useGPU := gpu != "cpu"
 
 	reader, err := m.cli.ImagePull(
 		ctx,
@@ -72,13 +73,14 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu bool) error {
 	// -------------------------
 	// GPU SUPPORT
 	// -------------------------
-	if gpu {
-		log.Println("GPU detected, enabling GPU support for Jupyter container")
+	if useGPU {
+		log.Println("GPU requested, enabling GPU support for Jupyter container")
 		hostConfig.DeviceRequests = []container.DeviceRequest{
 			{
 				Driver:       "nvidia",
-				Count:        -1,
+				Count:        1,
 				Capabilities: [][]string{{"gpu"}},
+				DeviceIDs:    []string{gpu},
 			},
 		}
 	}
@@ -112,46 +114,46 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu bool) error {
 	)
 }
 
-func (m *Manager) EnsureJupyter(ctx context.Context) error {
+// func (m *Manager) EnsureJupyter(ctx context.Context) error {
 
-	containers, err := m.cli.ContainerList(
-		ctx,
-		container.ListOptions{
-			All: true,
-		},
-	)
+// 	containers, err := m.cli.ContainerList(
+// 		ctx,
+// 		container.ListOptions{
+// 			All: true,
+// 		},
+// 	)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	for _, c := range containers {
+// 	for _, c := range containers {
 
-		for _, name := range c.Names {
+// 		for _, name := range c.Names {
 
-			if name == "/"+JupyterContainerName {
+// 			if name == "/"+JupyterContainerName {
 
-				if c.State != "running" {
-					return m.cli.ContainerStart(
-						ctx,
-						c.ID,
-						container.StartOptions{},
-					)
-				}
+// 				if c.State != "running" {
+// 					return m.cli.ContainerStart(
+// 						ctx,
+// 						c.ID,
+// 						container.StartOptions{},
+// 					)
+// 				}
 
-				return nil
-			}
-		}
-	}
+// 				return nil
+// 			}
+// 		}
+// 	}
 
-	gpu, err := m.HasGPU(ctx)
+// 	gpu, err := m.HasGPU(ctx)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return m.StartJupyter(ctx, gpu)
-}
+// 	return m.StartJupyter(ctx, gpu)
+// }
 
 func (m *Manager) JupyterRunning(ctx context.Context) bool {
 

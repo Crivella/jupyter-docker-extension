@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	// "context"
 	"strconv"
 	"flag"
 	"log"
@@ -14,6 +14,10 @@ import (
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 )
+
+type StartRequest struct {
+	GPUDevice string `json:"gpuDevice"` // "0", "1", or "cpu"
+}
 
 func main() {
 	var socketPath string
@@ -31,12 +35,12 @@ func main() {
 	}
 	defer manager.Close()
 
-	ctx := context.Background()
+	// ctx := context.Background()
 
-	// --- Ensure Jupyter is running (GPU or CPU decision happens here)
-	if err := manager.EnsureJupyter(ctx); err != nil {
-		log.Fatalf("failed to start jupyter: %v", err)
-	}
+	// // --- Ensure Jupyter is running (GPU or CPU decision happens here)
+	// if err := manager.EnsureJupyter(ctx); err != nil {
+	// 	log.Fatalf("failed to start jupyter: %v", err)
+	// }
 
 	router := echo.New()
 	router.HideBanner = true
@@ -71,6 +75,31 @@ func main() {
 	
 		return c.JSON(200, map[string]any{
 			"gpuAvailable": gpu,
+		})
+	})
+	router.GET("/gpu-list", func(c echo.Context) error {
+		gpus, err := manager.ListGPUs(c.Request().Context())
+		if err != nil {
+			return c.JSON(500, err.Error())
+		}
+		return c.JSON(200, gpus)
+	})
+	router.POST("/start", func(c echo.Context) error {
+		var req StartRequest
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(400, err.Error())
+		}
+	
+		err := manager.StartJupyter(
+			c.Request().Context(),
+			req.GPUDevice,
+		)
+		if err != nil {
+			return c.JSON(500, err.Error())
+		}
+	
+		return c.JSON(200, map[string]any{
+			"message": "Jupyter started successfully",
 		})
 	})
 
