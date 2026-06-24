@@ -135,6 +135,8 @@ export function App() {
       // setDarkMode();
       // getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
       // getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
+      getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
+      getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
     };
 
     if (!starting) {

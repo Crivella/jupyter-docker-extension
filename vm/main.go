@@ -53,7 +53,7 @@ func main() {
 	}
 	router.Listener = ln
 
-	router.GET("/ready", func(ctx echo.Context) error {
+	router.GET("/ready2", func(ctx echo.Context) error {
 		ready := manager.JupyterRunning(
 			ctx.Request().Context(),
 		)
@@ -62,6 +62,28 @@ func main() {
 			http.StatusOK,
 			strconv.FormatBool(ready),
 		)
+	})
+	router.GET("/ready", func (ctx echo.Context) error {
+		ip, err := manager.JupyterInternalIP(ctx.Request().Context())
+		if err != nil {
+			log.Println(err)
+			return ctx.String(http.StatusOK, "false")
+		}
+		log.Println("Jupyter internal IP:", ip)
+		url := "http://" + ip + ":8888/"
+		// url := "http://jupyter:8888/" // "jupyter" is the name of the service defined in docker-compose.yml
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Println(err)
+			return ctx.String(http.StatusOK, "false")
+	
+		}
+		defer resp.Body.Close()
+	
+		return ctx.String(resp.StatusCode, "true")
+	
+		// return ctx.JSON(http.StatusOK, HTTPMessageBody{Message: "hello from HTTP"})
+	
 	})
 	router.GET("/gpu", func(c echo.Context) error {
 	
@@ -105,6 +127,23 @@ func main() {
 
 	log.Fatal(router.Start(startURL))
 }
+
+// // ready checks whether Jupyter Notebook is ready or not by querying jupyter:8080.
+// func ready(ctx echo.Context) error {
+// 	url := "http://jupyter:8888/" // "jupyter" is the name of the service defined in docker-compose.yml
+// 	resp, err := http.Get(url)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return ctx.String(http.StatusOK, "false")
+
+// 	}
+// 	defer resp.Body.Close()
+
+// 	return ctx.String(resp.StatusCode, "true")
+
+// 	// return ctx.JSON(http.StatusOK, HTTPMessageBody{Message: "hello from HTTP"})
+
+// }
 
 func listen(path string) (net.Listener, error) {
 	return net.Listen("unix", path)

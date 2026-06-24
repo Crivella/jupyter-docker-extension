@@ -3,6 +3,7 @@ package workload
 import (
 	"context"
 	"log"
+	"fmt"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -168,4 +169,30 @@ func (m *Manager) JupyterRunning(ctx context.Context) bool {
 
 	return inspect.State != nil &&
 		inspect.State.Running
+}
+
+func (m *Manager) JupyterInternalIP(ctx context.Context) (string, error) {
+	inspect, err := m.cli.ContainerInspect(ctx, JupyterContainerName)
+	if err != nil {
+		return "", err
+	}
+
+	// Most common network: bridge
+	if inspect.NetworkSettings == nil {
+		return "", fmt.Errorf("no network settings found")
+	}
+
+	// Try default bridge network first
+	if ip := inspect.NetworkSettings.IPAddress; ip != "" {
+		return ip, nil
+	}
+
+	// Fallback: iterate networks (more robust)
+	for _, network := range inspect.NetworkSettings.Networks {
+		if network.IPAddress != "" {
+			return network.IPAddress, nil
+		}
+	}
+
+	return "", fmt.Errorf("no IP address found for container %s", JupyterContainerName)
 }
