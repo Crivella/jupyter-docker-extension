@@ -3,7 +3,7 @@ import { Grid, LinearProgress, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 const client = createDockerDesktopClient();
-const vmName = 'jupyter-runtime';
+const vmName = 'AITW-eessi-jupyter-runtime';
 const vmUser = 'eessi-user';
 const jlabConfigDir = `/home/${vmUser}/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/`;
 const jlabConfigFile = `${jlabConfigDir}/themes.jupyterlab-settings`;
@@ -15,42 +15,54 @@ function useDockerDesktopClient() {
 export function App() {
   const [gpus, setGpus] = useState<any[]>([]);
   const [selectedGpu, setSelectedGpu] = useState("cpu");
+  const [eessiVersions, setEessiVersions] = useState<string[]>(["2023.06", "2025.06"]);
+  const [selectedEessiVersion, setSelectedEessiVersion] = useState<string | null>(null);
+  
+  const [initialCheck, setInitialCheck] = useState(true);
   const [starting, setStarting] = useState(false);
-  // const [runtime, setRuntime] = useState<any>(null);
-
-  const [port, setPort] = useState<number | null>(null);
-  const [tokenStr, setTokenStr] = useState('');
-  const [ready, setReady] = useState(false);
+  const [readyContainer, setReadyContainer] = useState(false);
+  const [readyServer, setReadyServer] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
-  const ddClient = useDockerDesktopClient();
+  
+  const [tokenStr, setTokenStr] = useState('');
+  const [port, setPort] = useState<number | null>(null);
   const isDarkModeEnabled = useMediaQuery('(prefers-color-scheme: dark)', { noSsr: true });
   const prevMode = isDarkModeEnabled ? 'Light' : 'Dark';
   const currentMode = isDarkModeEnabled ? 'Dark' : 'Light';
 
-  useEffect(() => {
-    const load = async () => {
-      // let res = await ddClient.extension.vm?.service?.get("/gpu-list");
-      // console.log("/gpu-list response:", res);
-      // // setGpus(res);
-      // setGpus(res as any[]);
-      ddClient.extension.vm?.service?.get("/gpu-list").then((res: any) => {
-        console.log("/gpu-list response:", res);
-        setGpus(res as any[]);
-      })
+  const ddClient = useDockerDesktopClient();
 
-      // res = await ddClient.extension.vm?.service?.get("/ready");
-      // if (res) {
-      //   setReady(true);
-      // }
-      ddClient.extension.vm?.service?.get("/ready").then((res: any) => {
-        if (res) {
-          setReady(true);
-        }
-      })
-    };
-  
-    load();
-  }, []);
+  // Functions ---------------------------------------------------------------------------------------------------------
+  const getGPUList = async () => {
+    try {
+      const result = await ddClient.extension.vm?.service?.get('/gpu-list');
+      setGpus(result as any[]);
+    } catch (error) {
+      console.log('error when getting GPU list', error);
+    }
+  }
+
+  const checkReadyServer = async () => {
+    try {
+      const result = await ddClient.extension.vm?.service?.get('/ready-server');
+      console.log('checkReadyServer result:', result);
+      return Boolean(result);
+    } catch (error) {
+      console.log('error when checking Jupyter Notebook status', error);
+      return false;
+    }
+  }
+
+  const checkReadyContainer = async () => {
+    try {
+      const result = await ddClient.extension.vm?.service?.get('/ready-container');
+      console.log('checkReadyContainer result:', result);
+      return Boolean(result);
+    } catch (error) {
+      console.log('error when checking Jupyter Notebook container status', error);
+      return false;
+    }
+  }
 
   const getJupyterPort = async (portNumber: number, envFile: string, isMain: boolean) => {
     console.log(`Getting port ${portNumber} for ${isMain ? 'main' : 'secondary'} service`);
@@ -92,125 +104,185 @@ export function App() {
   }
 
   const getToken = async () => {
-    const tokenResult = await ddClient.docker.cli.exec("logs", [
+    console.log('Getting Jupyter token');
+    ddClient.docker.cli.exec("exec", [
       vmName,
-      '--tail',
-      '60'
-    ]);
-    const tokenMatch = tokenResult?.stderr?.match(/http.*\/lab\?.*token=([a-z0-9]+)/);
-    if (tokenMatch) {
-      setTokenStr(`?token=${tokenMatch[1]}`);
-    }
+      '/usr/bin/su',
+      '-c',
+      '"/opt/jupyter-env/bin/jupyter server list"',
+      vmUser
+    ]).then((tokenResult: any) => {
+      const tokenMatch = tokenResult?.stdout?.match(/http.*\/\?.*token=([a-z0-9]+)/);
+      if (tokenMatch) {
+        setTokenStr(`?token=${tokenMatch[1]}`);
+      } else {
+        console.log(`Failed to get token from jupyter server list output: ${tokenResult?.stdout}`);
+      }
+    }).catch((error: any) => {
+      console.log('Failed to run jupyter server list to get token:', error);
+    });
   }
 
-  useEffect(() => {
-    if (ready) {
-      getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
-      getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
-      getToken();
+  const getEESSIVersions = async () => {
+    console.log('Getting EESSI versions');
+    ddClient.docker.cli.exec("exec", [
+      vmName,
+      'ls',
+      '/cvmfs/software.eessi.io/versions'
+    ]).then((versionResult: any) => {
+      const versions = versionResult?.stdout?.split('\n').filter((line: string) => line.trim() !== '');
+      console.log('EESSI versions:', versions);
+      setEessiVersions(versions);
+    })
+  }
+
+  const startJupyter = async () => {
+    setStarting(true);
+  
+    try {
+      await ddClient.extension.vm?.service?.post("/start", {
+        gpuDevice: selectedGpu,
+        eessiVersion: selectedEessiVersion
+      });
+    } catch (error) {
+      console.log('Failed to start Jupyter Notebook', error);
     }
-  }, [ready]);
+  };
 
+  // useEffect Hooks ---------------------------------------------------------------------------------------------------
+  // Startup sequence: get the GPU list and check if the Jupyter server is already running
   useEffect(() => {
-    console.log('Calling useEffect for dark mode with isDarkModeEnabled:', isDarkModeEnabled, 'ready:', ready);
-    if (!ready) {
-      return;
-    }
+    const load = async () => {
+      getGPUList();
 
-    setDarkMode().then(() => {
-      console.log('Set dark mode to', currentMode);
-    }).catch(error => {
-      console.log('Failed to set dark mode', error);
-    });
-  }, [isDarkModeEnabled, ready]);
-
-  useEffect(() => {
-    console.log('Calling useEffect with starting:', starting, 'isDarkModeEnabled:', isDarkModeEnabled);
-    let timer: number;
-    const start = async () => {
-      setReady(() => false);
-      // sleep 2 seconds to ensure the VM has been started
-      await new Promise(resolve => setTimeout(resolve, 4000));
-
-      // setDarkMode();
-      // getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
-      // getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
-      getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
-      getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
+      // setInitialCheck(true);
+      console.log(`Checking if Jupyter Notebook is already running: initialCheck: ${initialCheck}`);
+      setStarting(false);
+      setReadyServer(false);
+      setReadyContainer(false);
+      
+      if (await checkReadyContainer()) {
+        setReadyContainer(true);
+      }
+      
+      if (await checkReadyServer()) {
+        setReadyServer(true);
+      } else {
+        setInitialCheck(false);
+      }
+      console.log(`DONE Checking if Jupyter Notebook is already running: initialCheck: ${initialCheck}`);
     };
+  
+    load();
+  }, []);
 
+  // Once the container is ready, get the Jupyter port and Flask port (the container needs the env files to start the services)
+  useEffect(() => {
+    console.log('Calling useEffect for readyContainer with readyContainer:', readyContainer);
+    if (readyContainer) {
+      getJupyterPort(8888, `/home/${vmUser}/jupyter_port.env`, true);
+      getJupyterPort(5000, `/home/${vmUser}/flask_port.env`, false);
+    }
+  }, [readyContainer]);
+
+  // Once the server is ready, get the Jupyter token and EESSI versions
+  useEffect(() => {
+    console.log('Calling useEffect for readyServer with readyServer:', readyServer);
+    if (readyServer) {
+      getToken();
+      getEESSIVersions();
+      setDarkMode();
+    }
+  }, [readyServer]);
+
+  // Allow toggling dark mode in the Jupyter Lab interface by updating the config file in the container
+  useEffect(() => {
+    console.log('Calling useEffect for dark mode with isDarkModeEnabled:', isDarkModeEnabled, 'readyServer:', readyServer);
+    if (readyServer) {
+      setDarkMode();
+    }
+  }, [isDarkModeEnabled, readyServer]);
+
+  // Procedure to start the server and poll for readiness. If the server is not ready after 60 seconds, mark it as unavailable.
+  useEffect(() => {
+    console.log('Calling useEffect with starting:', starting);
     if (!starting) {
       return;
     }
+  
+    let timer: any = null;
+    const start = async () => {
+      setReadyContainer(false);
+      setReadyServer(false);
+    };
+
     start().then(() => {
       let retries = 60;
-      let timer = setInterval(async () => {
-
+      let internalReadyContainer = false;
+      let internalReadyServer = false;
+      timer = setInterval(async () => {
         if (retries == 0) {
+          console.log('Jupyter Notebook is not ready after 60 seconds, marking as unavailable');
           clearInterval(timer);
           setUnavailable(true);
         }
 
-        try {
-          const result = await ddClient.extension.vm?.service?.get('/ready');
+        console.log('Starting loop: readyContainer:', readyContainer, 'readyServer:', readyServer, 'retries left:', retries);
+        if (!internalReadyContainer && await checkReadyContainer()) {
+          internalReadyContainer = true;
+          setReadyContainer(true);
+        }
 
-          if (Boolean(result)) {
+        if (!internalReadyServer && await checkReadyServer()) {
+          internalReadyServer = true;
 
-            // Get the token from the VM service
-            const tokenResult = await ddClient.docker.cli.exec("logs", [
-              vmName,
-              // '--tail',
-              // '60'
-            ]);
-            // Invert order of lines to find the latest token first (server restartswill cause a new token
-            // to be generated and old token to be invalid)
-            const reversed = tokenResult?.stderr?.split('\n').reverse()?.join('\n');
-            const tokenMatch = reversed?.match(/http.*\/lab\?.*token=([a-z0-9]+)/);
-            if (tokenMatch) {
-              setTokenStr(`?token=${tokenMatch[1]}`);
-            }
-
-            // Set ready to true to show the iframe
-            setReady(() => true);
-            setStarting(() => false);
-            clearInterval(timer);
-          }
-        } catch (error) {
-          console.log('error when checking Jupyter Notebook status', error);
+          setReadyServer(true);
+          clearInterval(timer);
+        } else {
+          console.log('Jupyter Notebook is not ready yet, retries left:', retries);
           retries--;
         }
       }, 1000);
     }).catch(error => {
       console.log('failed to start Jupyter Notebook', error);
       ddClient.desktopUI.toast.error(error);
+      setStarting(false);
       setUnavailable(true);
     })
 
     return () => {
-      clearInterval(timer);
+      if (timer !== null) {
+        clearInterval(timer);
+      }
     };
   }, [starting]);
   
-  const startJupyter = async () => {
-    setStarting(true);
-  
-    const res = await ddClient.extension.vm?.service?.post("/start", {
-      gpuDevice: selectedGpu,
-    });
-  
-    // setRuntime(res);
-  };
-
+  // Once the server is ready, and we have the port and token, redirect the user to the Jupyter Lab interface in their browser
   useEffect(() => {
-    if (ready && port) {
+    if (readyServer) {
+      if (!port) {
+        console.log("Server ready but port not found yet, waiting for port...");
+        return;
+      }
+      if (!tokenStr) {
+        console.log("Server ready but token not found yet, waiting for token...");
+        return;
+      }
       console.log(`Jupyter Notebook is ready at http://localhost:${port}/lab${tokenStr}`);
       window.location.href = `http://localhost:${port}/lab${tokenStr}`;
+      setStarting(false);
     }
-  }, [ready, port, tokenStr]);
+  }, [readyServer, port, tokenStr]);
 
   return (
     <>
-      {unavailable ? (
+      {initialCheck ? (
+        <Grid>
+          <Grid item>
+            Initializing extension...
+          </Grid>
+        </Grid>
+      ) : unavailable ? (
         <Grid
           container
           flex={1}
@@ -225,11 +297,6 @@ export function App() {
             reopen/reinstall to try again.
           </Grid>
         </Grid>
-      ) : ready ? (
-        (() => {
-          // window.location.href = `http://localhost:${port}/lab${tokenStr}`;
-          return null;
-        })()
       ) : starting ? (
         <Grid
           container
@@ -288,6 +355,32 @@ export function App() {
               ))}
             </select>
           </Grid>
+
+          <Grid item>
+            <Typography>
+              Select the EESSI version you would like to use:
+            </Typography>
+          </Grid>
+
+          <Grid item>
+            <select
+              value={selectedEessiVersion || ""}
+              onChange={(e) => setSelectedEessiVersion(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+              }}
+            >
+              {eessiVersions.map((version) => (
+                <option
+                  key={version}
+                  value={version}
+                >
+                  {version}
+                </option>
+              ))}
+            </select>
+          </Grid>
   
           <Grid item>
             <button
@@ -304,29 +397,4 @@ export function App() {
       )}
     </>
   );
-  // return (
-  //   <>
-  //     {unavailable && (
-  //       <Grid container flex={1} direction="column" padding="16px 32px" height="100%" justifyContent="center" alignItems="center">
-  //         <Grid item>
-  //         Jupyter Notebook failed to start, please close the extension and reopen/reinstall to try again.
-  //         </Grid>
-  //       </Grid>
-  //     )}
-  //     {!ready && (
-  //       <Grid container flex={1} direction="column" padding="16px 32px" height="100%" justifyContent="center" alignItems="center">
-  //         <Grid item>
-  //           <LinearProgress/>
-  //           <Typography mt={2}>
-  //             Waiting for Jupyter Notebook to be ready. It may take some seconds if
-  //             it's the first time.
-  //           </Typography>
-  //         </Grid>
-  //       </Grid>
-  //     )}
-  //     {ready && (
-  //       window.location.href = `http://localhost:${port}/lab${tokenStr}`
-  //     )}
-  //   </>
-  // );
 }

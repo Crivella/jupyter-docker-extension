@@ -11,6 +11,7 @@ TAGGED_IMAGE_NAME_LATEST=$(IMAGE_NAME):latest
 clean:
 	-docker extension rm $(IMAGE_NAME)
 	-docker rmi $(TAGGED_IMAGE_NAME)
+	docker rm -f AITW-eessi-jupyter-runtime
 
 extension:
 	docker buildx build -t $(TAGGED_IMAGE_NAME) --build-arg VERSION=$(VERSION) --build-arg JUPYTER_IMAGE_NAME=$(JUPYTER_IMAGE_NAME) .

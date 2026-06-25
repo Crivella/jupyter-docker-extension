@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "context"
 	"strconv"
 	"flag"
 	"log"
@@ -17,6 +16,7 @@ import (
 
 type StartRequest struct {
 	GPUDevice string `json:"gpuDevice"` // "0", "1", or "cpu"
+	EESSIVersion string `json:"eessiVersion"`
 }
 
 func main() {
@@ -35,13 +35,6 @@ func main() {
 	}
 	defer manager.Close()
 
-	// ctx := context.Background()
-
-	// // --- Ensure Jupyter is running (GPU or CPU decision happens here)
-	// if err := manager.EnsureJupyter(ctx); err != nil {
-	// 	log.Fatalf("failed to start jupyter: %v", err)
-	// }
-
 	router := echo.New()
 	router.HideBanner = true
 
@@ -53,7 +46,9 @@ func main() {
 	}
 	router.Listener = ln
 
-	router.GET("/ready2", func(ctx echo.Context) error {
+
+	// Endpoint to check if the Jupyter container is running
+	router.GET("/ready-container", func(ctx echo.Context) error {
 		ready := manager.JupyterRunning(
 			ctx.Request().Context(),
 		)
@@ -63,7 +58,9 @@ func main() {
 			strconv.FormatBool(ready),
 		)
 	})
-	router.GET("/ready", func (ctx echo.Context) error {
+
+	// Endpoint to check if the Jupyter server is responding
+	router.GET("/ready-server", func (ctx echo.Context) error {
 		ip, err := manager.JupyterInternalIP(ctx.Request().Context())
 		if err != nil {
 			log.Println(err)
@@ -71,7 +68,6 @@ func main() {
 		}
 		log.Println("Jupyter internal IP:", ip)
 		url := "http://" + ip + ":8888/"
-		// url := "http://jupyter:8888/" // "jupyter" is the name of the service defined in docker-compose.yml
 		resp, err := http.Get(url)
 		if err != nil {
 			log.Println(err)
@@ -79,14 +75,15 @@ func main() {
 	
 		}
 		defer resp.Body.Close()
+
+		log.Println("Jupyter server response status:", resp.StatusCode)
 	
 		return ctx.String(resp.StatusCode, "true")
 	
-		// return ctx.JSON(http.StatusOK, HTTPMessageBody{Message: "hello from HTTP"})
-	
 	})
+
+	// Endpoint to check if a GPU is available
 	router.GET("/gpu", func(c echo.Context) error {
-	
 		gpu, err := manager.HasGPU(c.Request().Context())
 	
 		if err != nil {
@@ -99,6 +96,8 @@ func main() {
 			"gpuAvailable": gpu,
 		})
 	})
+
+	// Endpoint to list available GPUs
 	router.GET("/gpu-list", func(c echo.Context) error {
 		gpus, err := manager.ListGPUs(c.Request().Context())
 		if err != nil {
@@ -106,15 +105,20 @@ func main() {
 		}
 		return c.JSON(200, gpus)
 	})
+
+	// Endpoint to start the Jupyter container
 	router.POST("/start", func(c echo.Context) error {
 		var req StartRequest
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(400, err.Error())
 		}
+
+		log.Println("Starting Jupyter with:", req)
 	
 		err := manager.StartJupyter(
 			c.Request().Context(),
 			req.GPUDevice,
+			req.EESSIVersion,
 		)
 		if err != nil {
 			return c.JSON(500, err.Error())
@@ -128,28 +132,6 @@ func main() {
 	log.Fatal(router.Start(startURL))
 }
 
-// // ready checks whether Jupyter Notebook is ready or not by querying jupyter:8080.
-// func ready(ctx echo.Context) error {
-// 	url := "http://jupyter:8888/" // "jupyter" is the name of the service defined in docker-compose.yml
-// 	resp, err := http.Get(url)
-// 	if err != nil {
-// 		log.Println(err)
-// 		return ctx.String(http.StatusOK, "false")
-
-// 	}
-// 	defer resp.Body.Close()
-
-// 	return ctx.String(resp.StatusCode, "true")
-
-// 	// return ctx.JSON(http.StatusOK, HTTPMessageBody{Message: "hello from HTTP"})
-
-// }
-
 func listen(path string) (net.Listener, error) {
 	return net.Listen("unix", path)
-}
-
-type HTTPMessageBody struct {
-	Message string `json:"message"`
-	Body    string `json:"body,omitempty"`
 }

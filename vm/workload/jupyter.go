@@ -12,11 +12,49 @@ import (
 )
 
 const (
-	JupyterContainerName = "jupyter-runtime"
+	JupyterContainerName = "AITW-eessi-jupyter-runtime"
 	JupyterImage         = "ghcr.io/ai-transpwood/eessi_jupyterlab:0.1.6"
+	JupyterUser		     = "eessi-user"
 )
 
-func (m *Manager) StartJupyter(ctx context.Context, gpu string) error {
+var requiredPorts = map[string]nat.PortBinding{
+	"8888/tcp": {
+		HostIP: "0.0.0.0",
+		HostPort: "0", // random host port
+	},
+	"5000/tcp": {
+		HostIP: "0.0.0.0",
+		HostPort: "0", // random host port
+	},
+}
+
+var requiredVolumes = map[string]string{
+	"cvmfs-cache": "/cvmfs-cache",
+	"jupyter_data": fmt.Sprintf("/home/%s", JupyterUser),
+}
+
+func makePorts(ports map[string]nat.PortBinding) (nat.PortSet, nat.PortMap) {
+    exposedPorts := make(nat.PortSet, len(ports))
+	portBindings := make(nat.PortMap, len(ports))
+
+	for port, binding := range requiredPorts {
+		p := nat.Port(port)
+		exposedPorts[p] = struct{}{}
+		portBindings[p] = []nat.PortBinding{binding}
+	}
+
+    return exposedPorts, portBindings
+}
+
+func makeVolumeBindings(volumes map[string]string) []string {
+	bindings := []string{}
+	for volName, containerPath := range volumes {
+		bindings = append(bindings, fmt.Sprintf("%s:%s", volName, containerPath))
+	}
+	return bindings
+}	
+
+func (m *Manager) StartJupyter(ctx context.Context, gpu string, eessi_version string) error {
 
 	useGPU := gpu != "cpu"
 
@@ -29,46 +67,16 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu string) error {
 		defer reader.Close()
 	}
 
-	// ---- PORT BINDINGS (THIS IS THE IMPORTANT PART)
-	portBindings := nat.PortMap{
-		"8888/tcp": []nat.PortBinding{
-			{
-				HostIP:   "0.0.0.0",
-				HostPort: "0", // random host port
-			},
-		},
-		"5000/tcp": []nat.PortBinding{
-			{
-				HostIP:   "0.0.0.0",
-				HostPort: "0", // random host port
-			},
-		},
-	}
-
-	exposedPorts := nat.PortSet{
-		"8888/tcp": struct{}{},
-		"5000/tcp": struct{}{},
-	}
-
-	// -------------------------
-	// VOLUMES
-	// -------------------------
-	volumeBindings := []string{
-		"cvmfs-cache:/cvmfs-cache",
-		"jupyter_data:/home/eessi-user",
-	}
+	exposedPorts, portBindings := makePorts(requiredPorts)
+	volumeBindings := makeVolumeBindings(requiredVolumes)
 
 	// -------------------------
 	// HOST CONFIG
 	// -------------------------
 	hostConfig := &container.HostConfig{
 		PortBindings: portBindings,
-
-		// REQUIRED: privileged mode
-		Privileged: true,
-
-		// volumes
 		Binds: volumeBindings,
+		Privileged: true,  // Required for CVMFS to work properly
 	}
 
 	// -------------------------
@@ -94,6 +102,9 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu string) error {
 		&container.Config{
 			Image: JupyterImage,
 			ExposedPorts: exposedPorts,
+			Env: []string{
+				fmt.Sprintf("REQUESTED_EESSI_VERSION=%s", eessi_version),
+			},
 		},
 		hostConfig,
 		&network.NetworkingConfig{},
@@ -114,47 +125,6 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu string) error {
 		container.StartOptions{},
 	)
 }
-
-// func (m *Manager) EnsureJupyter(ctx context.Context) error {
-
-// 	containers, err := m.cli.ContainerList(
-// 		ctx,
-// 		container.ListOptions{
-// 			All: true,
-// 		},
-// 	)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for _, c := range containers {
-
-// 		for _, name := range c.Names {
-
-// 			if name == "/"+JupyterContainerName {
-
-// 				if c.State != "running" {
-// 					return m.cli.ContainerStart(
-// 						ctx,
-// 						c.ID,
-// 						container.StartOptions{},
-// 					)
-// 				}
-
-// 				return nil
-// 			}
-// 		}
-// 	}
-
-// 	gpu, err := m.HasGPU(ctx)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return m.StartJupyter(ctx, gpu)
-// }
 
 func (m *Manager) JupyterRunning(ctx context.Context) bool {
 
@@ -195,4 +165,26 @@ func (m *Manager) JupyterInternalIP(ctx context.Context) (string, error) {
 	}
 
 	return "", fmt.Errorf("no IP address found for container %s", JupyterContainerName)
+}
+
+func (m *Manager) CleanupJupyter(ctx context.Context) error {
+	return m.cli.ContainerRemove(
+		ctx,
+		JupyterContainerName,
+		container.RemoveOptions{
+			Force: true,
+		},
+	)
+
+}
+
+func (m *Manager) CleanupVolumes(ctx context.Context) error {
+	for volName := range requiredVolumes {
+		err := m.cli.VolumeRemove(ctx, volName, true)
+		if err != nil {
+			log.Printf("Error removing volume %s: %v", volName, err)
+		}
+	}
+
+	return nil
 }
