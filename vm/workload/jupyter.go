@@ -57,6 +57,7 @@ func makeVolumeBindings(volumes map[string]string) []string {
 func (m *Manager) StartJupyter(ctx context.Context, gpu string, eessi_version string) error {
 
 	useGPU := gpu != "cpu"
+	log.Printf("Starting Jupyter container with GPU: %s, EESSI version: %s", gpu, eessi_version)
 
 	reader, err := m.cli.ImagePull(
 		ctx,
@@ -84,10 +85,12 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu string, eessi_version st
 	// -------------------------
 	if useGPU {
 		log.Println("GPU requested, enabling GPU support for Jupyter container")
+		log.Printf("Using GPU device: %s", gpu)
 		hostConfig.DeviceRequests = []container.DeviceRequest{
 			{
 				Driver:       "nvidia",
-				Count:        1,
+				// Incompatible with DeviceIDs
+				// Count:        1,
 				Capabilities: [][]string{{"gpu"}},
 				DeviceIDs:    []string{gpu},
 			},

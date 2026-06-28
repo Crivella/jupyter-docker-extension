@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 	"bytes"
-
+	
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/sirupsen/logrus"
 )
 
 type GPU struct {
@@ -40,6 +41,7 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 		// ignore output safely
 		defer func() {}()
 	}
+	logrus.Infof("Pulled image %s for GPU detection", imageName)
 	hostConfig := &container.HostConfig{}
 	hostConfig.DeviceRequests = []container.DeviceRequest{
 		{
@@ -49,6 +51,7 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 		},
 	}
 	// Create container that lists GPUs
+	logrus.Infof("Creating container to probe GPUs")
 	resp, err := m.cli.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -77,6 +80,7 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 	}
 
 	statusCh, errCh := m.cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	logrus.Infof("Waiting for GPU probe container to finish")
 
 	select {
 		case <-statusCh:
@@ -92,6 +96,8 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 		ShowStdout: true,
 		ShowStderr: true,
 	})
+	logrus.Infof("GPU probe container finished, reading logs")
+	logrus.Infof("GPU probe container logs: %v", logs)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +105,7 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 
 	buf := new(bytes.Buffer)
 	_, _ = io.Copy(buf, logs)
+	logrus.Infof("GPU probe container logs: %s", buf.String())
 
 	output := buf.String()
 
@@ -108,12 +115,14 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 
 	var gpus []GPU
 
+	// TODO: Improve parsing with regex (remove initial stuff and get ID from line such as "GPU XXX: ...")
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 
+		logrus.Infof("Detected GPU: %s", line)
 		gpus = append(gpus, GPU{
 			ID:        strconv.Itoa(i),
 			Name:      line,

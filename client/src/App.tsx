@@ -140,6 +140,7 @@ export function App() {
     setStarting(true);
   
     try {
+      console.log(`Starting Jupyter Notebook with GPU: ${selectedGpu} and EESSI version: ${selectedEessiVersion}`);
       await ddClient.extension.vm?.service?.post("/start", {
         gpuDevice: selectedGpu,
         eessiVersion: selectedEessiVersion
