@@ -1,8 +1,9 @@
 package workload
 
 import (
-	"context"
 	"io"
+	"os"
+	"context"
 	"strconv"
 	"strings"
 	"bytes"
@@ -35,12 +36,14 @@ func (m *Manager) ListGPUs(ctx context.Context) ([]GPU, error) {
 	imageName := "nvidia/cuda:12.4.1-base-ubuntu22.04"
 
 	// Ensure image exists
-	_, err := m.cli.ImagePull(ctx, imageName, image.PullOptions{})
+	reader, err := m.cli.ImagePull(ctx, imageName, image.PullOptions{})
+	logrus.Infof("Pulled image %s for GPU detection error: %v", imageName, err)
 	if err == nil {
-		// drain stream (required)
-		// ignore output safely
-		defer func() {}()
+		// Ensure the stream is fully consumed so the reader is not terminated prematurely
+		io.Copy(os.Stdout, reader)
+		defer reader.Close()
 	}
+
 	logrus.Infof("Pulled image %s for GPU detection", imageName)
 	hostConfig := &container.HostConfig{}
 	hostConfig.DeviceRequests = []container.DeviceRequest{

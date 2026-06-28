@@ -1,6 +1,8 @@
 package workload
 
 import (
+	"io"
+	"os"
 	"context"
 	"log"
 	"fmt"
@@ -65,8 +67,10 @@ func (m *Manager) StartJupyter(ctx context.Context, gpu string, eessi_version st
 		image.PullOptions{},
 	)
 	if err == nil {
+		// Ensure the stream is fully consumed so the reader is not terminated prematurely
+		io.Copy(os.Stdout, reader)
 		defer reader.Close()
-	}
+	} 
 
 	exposedPorts, portBindings := makePorts(requiredPorts)
 	volumeBindings := makeVolumeBindings(requiredVolumes)
