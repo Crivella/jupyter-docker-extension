@@ -154,7 +154,6 @@ export function App() {
   // Startup sequence: get the GPU list and check if the Jupyter server is already running
   useEffect(() => {
     const load = async () => {
-      getGPUList();
 
       // setInitialCheck(true);
       console.log(`Checking if Jupyter Notebook is already running: initialCheck: ${initialCheck}`);
@@ -164,6 +163,9 @@ export function App() {
       
       if (await checkReadyContainer()) {
         setReadyContainer(true);
+      } else {
+        // Only get the GPU list if the container is not already running
+        getGPUList();
       }
       
       if (await checkReadyServer()) {
