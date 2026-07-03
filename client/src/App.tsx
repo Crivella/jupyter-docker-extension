@@ -46,7 +46,7 @@ export function App() {
     try {
       const result = await ddClient.extension.vm?.service?.get('/ready-server');
       console.log('checkReadyServer result:', result);
-      return Boolean(result);
+      return result === true || result === 'true';
     } catch (error) {
       console.log('error when checking Jupyter Notebook status', error);
       return false;
@@ -57,7 +57,7 @@ export function App() {
     try {
       const result = await ddClient.extension.vm?.service?.get('/ready-container');
       console.log('checkReadyContainer result:', result);
-      return Boolean(result);
+      return result === true || result === 'true';
     } catch (error) {
       console.log('error when checking Jupyter Notebook container status', error);
       return false;
@@ -171,7 +171,8 @@ export function App() {
       } else {
         setInitialCheck(false);
       }
-      console.log(`DONE Checking if Jupyter Notebook is already running: initialCheck: ${initialCheck}`);
+      console.log(`DONE Checking if Jupyter Notebook is already running:`);
+      console.log(`  initialCheck: ${initialCheck} readyContainer: ${readyContainer}, readyServer: ${readyServer}`);
     };
   
     load();
